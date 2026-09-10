@@ -1,0 +1,38 @@
+name: Compile MQL5 to EX5
+on: [push, workflow_dispatch]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Compile MQL5
+        uses: fx31337/mql-compile-action@master
+        with:
+          init-platform: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: "artifacts/traderman-net/public/downloads/Tedderman_Universal_Client.mq5"
+
+      - name: Verify Compiled EX5
+        shell: pwsh
+        run: |
+          $binary = "artifacts/traderman-net/public/downloads/Tedderman_Universal_Client.ex5"
+          if (!(Test-Path -LiteralPath $binary -PathType Leaf)) {
+            throw "Compiler did not produce Tedderman_Universal_Client.ex5."
+          }
+          if ((Get-Item -LiteralPath $binary).Length -eq 0) {
+            throw "Compiled EX5 is empty."
+          }
+
+      - name: Upload Compiled EX5
+        uses: actions/upload-artifact@v4
+        with:
+          name: tedderman-ex5-indicator
+          path: "artifacts/traderman-net/public/downloads/Tedderman_Universal_Client.ex5"
+          if-no-files-found: error
